@@ -1,3 +1,7 @@
+// Tambahkan di atas setelah require
+const db = require('./config/db');
+
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -30,3 +34,18 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+// Test query
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await db.query('SELECT COUNT(*) FROM users');
+    res.json({ 
+      success: true, 
+      userCount: result.rows[0].count 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
