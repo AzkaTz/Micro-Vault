@@ -1,13 +1,10 @@
-// Tambahkan di atas setelah require
-const db = require('./config/db');
-
-
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
+const db = require('./config/db');
 
 // Middleware
 app.use(helmet());
@@ -23,18 +20,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Routes (will be added later)
-// app.use('/api/auth', require('./routes/auth'));
-// app.use('/api/strains', require('./routes/strains'));
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-});
-
-module.exports = app;
-// Test query
+// Test DB
 app.get('/api/test-db', async (req, res) => {
   try {
     const result = await db.query('SELECT COUNT(*) FROM users');
@@ -49,3 +35,15 @@ app.get('/api/test-db', async (req, res) => {
     });
   }
 });
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/strains', require('./routes/strains'));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+});
+
+module.exports = app;
