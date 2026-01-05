@@ -192,38 +192,38 @@ router.post('/', [
   body('microorganism_type').isIn(['BAKTERI', 'YEAST', 'KAPANG', 'ACTINOMYCETES']),
   
   // Optional fields
-  body('genus_species').optional().trim().isLength({ max: 255 }),
-  body('genus').optional().trim().isLength({ max: 100 }),
-  body('species').optional().trim().isLength({ max: 100 }),
-  body('sample_type').optional().trim().isLength({ max: 100 }),
-  body('origin_location').optional().trim(),
-  body('isolation_date').optional().isISO8601(),
+  body('genus_species').optional({ nullable: true }).trim().isLength({ max: 255 }),
+  body('genus').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('species').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('sample_type').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('origin_location').optional({ nullable: true }).trim(),
+  body('isolation_date').optional({ nullable: true }).isISO8601(),
   
   // Characteristics
-  body('characteristics_macroscopic').optional().trim(),
-  body('characteristics_microscopic').optional().trim(),
-  body('characteristics_biochemical').optional().trim(),
+  body('characteristics_macroscopic').optional({ nullable: true }).trim(),
+  body('characteristics_microscopic').optional({ nullable: true }).trim(),
+  body('characteristics_biochemical').optional({ nullable: true }).trim(),
   
   // Potentials (boolean)
-  body('potential_nitrogen_fixer').optional().isBoolean(),
-  body('potential_phosphate_solubilizer').optional().isBoolean(),
-  body('potential_proteolytic').optional().isBoolean(),
-  body('potential_lipolytic').optional().isBoolean(),
-  body('potential_amylolytic').optional().isBoolean(),
-  body('potential_cellulolytic').optional().isBoolean(),
-  body('potential_antimicrobial').optional().isBoolean(),
-  body('potential_iaa_hormone').optional().isBoolean(),
+  body('potential_nitrogen_fixer').optional({ nullable: true }).isBoolean(),
+  body('potential_phosphate_solubilizer').optional({ nullable: true }).isBoolean(),
+  body('potential_proteolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_lipolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_amylolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_cellulolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_antimicrobial').optional({ nullable: true }).isBoolean(),
+  body('potential_iaa_hormone').optional({ nullable: true }).isBoolean(),
   
   // Storage
-  body('storage_technique').optional().trim(),
-  body('culture_stock').optional().trim(),
-  body('storage_location').optional().trim().isLength({ max: 100 }),
+  body('storage_technique').optional({ nullable: true }).trim(),
+  body('culture_stock').optional({ nullable: true }).trim(),
+  body('storage_location').optional({ nullable: true }).trim().isLength({ max: 100 }),
   
   // System fields
-  body('biosafety_level').optional().isInt({ min: 1, max: 4 }),
-  body('genome_sequenced').optional().isBoolean(),
-  body('genbank_accession').optional().trim().isLength({ max: 50 }),
-  body('additional_notes').optional().isObject()
+  body('biosafety_level').optional({ nullable: true }).isInt({ min: 1, max: 4 }),
+  body('genome_sequenced').optional({ nullable: true }).isBoolean(),
+  body('genbank_accession').optional({ nullable: true }).trim().isLength({ max: 50 }),
+  body('additional_notes').optional({ nullable: true }).isObject()
 ], async (req, res) => {
   // Validate input
   const errors = validationResult(req);
@@ -349,32 +349,32 @@ router.post('/', [
 // PUT /api/strains/:id - Update strain
 router.put('/:id', [
   authenticateToken,
-  body('strain_code').optional().trim().isLength({ max: 100 }),
-  body('microorganism_type').optional().isIn(['BAKTERI', 'YEAST', 'KAPANG', 'ACTINOMYCETES']),
-  body('genus_species').optional().trim().isLength({ max: 255 }),
-  body('genus').optional().trim().isLength({ max: 100 }),
-  body('species').optional().trim().isLength({ max: 100 }),
-  body('sample_type').optional().trim().isLength({ max: 100 }),
-  body('origin_location').optional().trim(),
-  body('isolation_date').optional().isISO8601(),
-  body('characteristics_macroscopic').optional().trim(),
-  body('characteristics_microscopic').optional().trim(),
-  body('characteristics_biochemical').optional().trim(),
-  body('potential_nitrogen_fixer').optional().isBoolean(),
-  body('potential_phosphate_solubilizer').optional().isBoolean(),
-  body('potential_proteolytic').optional().isBoolean(),
-  body('potential_lipolytic').optional().isBoolean(),
-  body('potential_amylolytic').optional().isBoolean(),
-  body('potential_cellulolytic').optional().isBoolean(),
-  body('potential_antimicrobial').optional().isBoolean(),
-  body('potential_iaa_hormone').optional().isBoolean(),
-  body('storage_technique').optional().trim(),
-  body('culture_stock').optional().trim(),
-  body('storage_location').optional().trim().isLength({ max: 100 }),
-  body('biosafety_level').optional().isInt({ min: 1, max: 4 }),
-  body('genome_sequenced').optional().isBoolean(),
-  body('genbank_accession').optional().trim().isLength({ max: 50 }),
-  body('additional_notes').optional().isObject()
+  body('strain_code').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('microorganism_type').optional({ nullable: true }).isIn(['BAKTERI', 'YEAST', 'KAPANG', 'ACTINOMYCETES']),
+  body('genus_species').optional({ nullable: true }).trim().isLength({ max: 255 }),
+  body('genus').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('species').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('sample_type').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('origin_location').optional({ nullable: true }).trim(),
+  body('isolation_date').optional({ nullable: true }).isISO8601(),
+  body('characteristics_macroscopic').optional({ nullable: true }).trim(),
+  body('characteristics_microscopic').optional({ nullable: true }).trim(),
+  body('characteristics_biochemical').optional({ nullable: true }).trim(),
+  body('potential_nitrogen_fixer').optional({ nullable: true }).isBoolean(),
+  body('potential_phosphate_solubilizer').optional({ nullable: true }).isBoolean(),
+  body('potential_proteolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_lipolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_amylolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_cellulolytic').optional({ nullable: true }).isBoolean(),
+  body('potential_antimicrobial').optional({ nullable: true }).isBoolean(),
+  body('potential_iaa_hormone').optional({ nullable: true }).isBoolean(),
+  body('storage_technique').optional({ nullable: true }).trim(),
+  body('culture_stock').optional({ nullable: true }).trim(),
+  body('storage_location').optional({ nullable: true }).trim().isLength({ max: 100 }),
+  body('biosafety_level').optional({ nullable: true }).isInt({ min: 1, max: 4 }),
+  body('genome_sequenced').optional({ nullable: true }).isBoolean(),
+  body('genbank_accession').optional({ nullable: true }).trim().isLength({ max: 50 }),
+  body('additional_notes').optional({ nullable: true }).isObject()
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
