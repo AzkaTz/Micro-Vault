@@ -4,94 +4,77 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/db');
+const { authenticateToken, checkRole } = require('../middleware/auth');
 
 // POST /api/auth/register
-router.post('/register', [
-  body('email').isEmail().normalizeEmail(),
-  body('password').isLength({ min: 12 })
-    .withMessage('Password must be at least 12 characters'),
-  body('full_name').trim().notEmpty(),
-  body('role').isIn(['admin', 'researcher', 'technician']),
-  body('biosafety_clearance').optional().isInt({ min: 1, max: 4 })
-], async (req, res) => {
-  // Validate input
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { email, password, full_name, role, biosafety_clearance, lab_affiliation } = req.body;
-
-  try {
-    // Check if user already exists
-    const existingUser = await db.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ error: 'Email already registered' });
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      return res.status(400).json({ 
-        error: 'Password does not meet requirements',
-        details: passwordValidation.errors
-      });
-    }
-
-    // Hash password
-    const saltRounds = 10;
-    const password_hash = await bcrypt.hash(password, saltRounds);
-
-    // Insert user
-    const result = await db.query(
-      `INSERT INTO users (email, password_hash, full_name, role, biosafety_clearance, lab_affiliation)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, email, full_name, role, biosafety_clearance, created_at`,
-      [email, password_hash, full_name, role, biosafety_clearance || null, lab_affiliation || null]
-    );
-
-    const user = result.rows[0];
-
-    // Generate JWT
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role,
-        biosafety_clearance: user.biosafety_clearance
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    // Audit log
-    await db.query(
-      `INSERT INTO audit_logs (action, resource_type, resource_id, user_id, details)
-       VALUES ($1, $2, $3, $4, $5)`,
-      ['USER_REGISTERED', 'user', user.id, user.id, JSON.stringify({ email, role })]
-    );
-
-    res.status(201).json({ 
-      token, 
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role,
-        biosafety_clearance: user.biosafety_clearance
-      }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed', details: error.message });
-  }
+// POST /api/auth/register (DISABLED)
+router.post('/register', (req, res) => {
+  return res.status(403).json({
+    error: 'Self registration is disabled. Contact administrator.'
+  });
 });
+router.post(
+  '/admin/create-user',
+  authenticateToken,
+  checkRole('admin'),
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 12 }),
+    body('full_name').notEmpty(),
+    body('role').isIn(['admin','researcher','technician']),
+    body('biosafety_clearance').optional().isInt({ min:1, max:4 })
+  ],
+  async (req, res) => {
 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password, full_name, role, biosafety_clearance } = req.body;
+
+    try {
+
+      // cek user sudah ada
+      const existing = await db.query(
+        `SELECT id FROM users 
+        WHERE email=$1 
+        AND deleted_at IS NULL`,
+        [email]
+      );
+
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ error: 'Email already exists' });
+      }
+
+      // hash password
+      const hash = await bcrypt.hash(password, 10);
+
+      const result = await db.query(
+        `INSERT INTO users 
+         (email,password_hash,full_name,role,biosafety_clearance)
+         VALUES ($1,$2,$3,$4,$5)
+         RETURNING id,email,role`,
+        [email, hash, full_name, role, biosafety_clearance || null]
+      );
+
+      await db.query(
+        `INSERT INTO audit_logs(action,resource_type,resource_id,user_id)
+         VALUES($1,$2,$3,$4)`,
+        ['USER_CREATED','user',result.rows[0].id,req.user.userId]
+      );
+
+      res.status(201).json({
+        message: 'User created',
+        user: result.rows[0]
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Create user failed' });
+    }
+  }
+);
 // POST /api/auth/login
 router.post('/login', [
   body('email').isEmail().normalizeEmail(),
@@ -107,7 +90,10 @@ router.post('/login', [
   try {
     // Find user
     const result = await db.query(
-      'SELECT id, email, password_hash, full_name, role, biosafety_clearance FROM users WHERE email = $1',
+      `SELECT id, email, password_hash, full_name, role, biosafety_clearance
+      FROM users
+      WHERE email = $1
+      AND deleted_at IS NULL`,
       [email]
     );
 
@@ -159,6 +145,55 @@ router.post('/login', [
   }
 });
 
+// DELETE USER (soft delete)
+router.delete(
+  '/admin/users/:id',
+  authenticateToken,
+  checkRole('admin'),
+  async (req, res) => {
+
+    const { id } = req.params;
+
+    try {
+
+      // jangan biarkan admin hapus dirinya sendiri
+      if (req.user.userId === parseInt(id)) {
+        return res.status(400).json({
+          error: 'You cannot delete your own account'
+        });
+      }
+
+      const result = await db.query(
+        `UPDATE users 
+         SET deleted_at = NOW()
+         WHERE id = $1 AND deleted_at IS NULL
+         RETURNING id, email`,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          error: 'User not found'
+        });
+      }
+
+      // Audit log
+      await db.query(
+        `INSERT INTO audit_logs 
+         (action, resource_type, resource_id, user_id)
+         VALUES ($1, $2, $3, $4)`,
+        ['USER_DELETED', 'user', id, req.user.userId]
+      );
+
+      res.json({
+        message: 'User deleted successfully'
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Delete failed' });
+    }
+});
 // Helper function: Validate password strength
 function validatePassword(password) {
   const minLength = 12;

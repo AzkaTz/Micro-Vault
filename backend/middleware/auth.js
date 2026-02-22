@@ -1,25 +1,48 @@
+const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 
-// Verify JWT token
-function authenticateToken(req, res, next) {
-  // Get token from Authorization header
+async function authenticateToken(req, res, next) {
+
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  // Verify token
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // cek user masih aktif
+    const result = await db.query(
+      `SELECT id, role, biosafety_clearance, deleted_at
+       FROM users
+       WHERE id = $1`,
+      [decoded.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(403).json({ error: 'User not found' });
     }
-    
-    // Attach user info to request
-    req.user = user;
+
+    const dbUser = result.rows[0];
+
+    if (dbUser.deleted_at !== null) {
+      return res.status(403).json({ error: 'Account disabled' });
+    }
+
+    // attach user dari DB (bukan dari token)
+    req.user = {
+      userId: dbUser.id,
+      role: dbUser.role,
+      biosafety_clearance: dbUser.biosafety_clearance
+    };
+
     next();
-  });
+
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
 }
 
 // Check biosafety clearance level

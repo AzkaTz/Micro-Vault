@@ -20,7 +20,7 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP NULL;
 -- Strains table (UPDATED to match Excel structure)
 CREATE TABLE strains (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
