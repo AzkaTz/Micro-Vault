@@ -33,6 +33,16 @@ function StrainList() {
   const [strainToEdit, setStrainToEdit] = useState(null);
 
   // Fetch strains
+  const buildPotentialParams = (f) => ({
+    nitrogen_fixer: f.nitrogen_fixer ? 'true' : undefined,
+    phosphate_solubilizer: f.phosphate_solubilizer ? 'true' : undefined,
+    proteolytic: f.proteolytic ? 'true' : undefined,
+    lipolytic: f.lipolytic ? 'true' : undefined,
+    amylolytic: f.amylolytic ? 'true' : undefined,
+    cellulolytic: f.cellulolytic ? 'true' : undefined,
+    antimicrobial: f.antimicrobial ? 'true' : undefined,
+    iaa_hormone: f.iaa_hormone ? 'true' : undefined
+  });
   const fetchStrains = useCallback(async () => {
     setLoading(true);
     setError('');
