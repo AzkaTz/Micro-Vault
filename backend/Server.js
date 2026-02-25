@@ -35,7 +35,6 @@ app.get('/api/test-db', async (req, res) => {
     });
   }
 });
-
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/strains', require('./routes/strains'));
