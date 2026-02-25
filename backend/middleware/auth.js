@@ -1,13 +1,12 @@
-const db = require('../config/db');
-const jwt = require('jsonwebtoken');
+import jwt from "jsonwebtoken";
+import db from "../config/db.js";
 
-async function authenticateToken(req, res, next) {
-
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+export async function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    return res.status(401).json({ error: "Access token required" });
   }
 
   try {
@@ -22,13 +21,13 @@ async function authenticateToken(req, res, next) {
     );
 
     if (result.rows.length === 0) {
-      return res.status(403).json({ error: 'User not found' });
+      return res.status(403).json({ error: "User not found" });
     }
 
     const dbUser = result.rows[0];
 
     if (dbUser.deleted_at !== null) {
-      return res.status(403).json({ error: 'Account disabled' });
+      return res.status(403).json({ error: "Account disabled" });
     }
 
     // attach user dari DB (bukan dari token)
@@ -39,22 +38,20 @@ async function authenticateToken(req, res, next) {
     };
 
     next();
-
   } catch (err) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    return res.status(403).json({ error: "Invalid or expired token" });
   }
 }
 
-// Check biosafety clearance level
-function checkBiosafety(requiredLevel) {
+export function checkBiosafety(requiredLevel) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ error: "Authentication required" });
     }
 
     if (req.user.biosafety_clearance < requiredLevel) {
-      return res.status(403).json({ 
-        error: 'Insufficient biosafety clearance',
+      return res.status(403).json({
+        error: "Insufficient biosafety clearance",
         required: requiredLevel,
         current: req.user.biosafety_clearance
       });
@@ -64,16 +61,15 @@ function checkBiosafety(requiredLevel) {
   };
 }
 
-// Check role
-function checkRole(...allowedRoles) {
+export function checkRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ error: "Authentication required" });
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        error: 'Insufficient permissions',
+      return res.status(403).json({
+        error: "Insufficient permissions",
         required: allowedRoles,
         current: req.user.role
       });
@@ -82,9 +78,3 @@ function checkRole(...allowedRoles) {
     next();
   };
 }
-
-module.exports = {
-  authenticateToken,
-  checkBiosafety,
-  checkRole
-};

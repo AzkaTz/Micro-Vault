@@ -162,7 +162,7 @@ function StrainList() {
       <div className="px-4 py-4 sm:px-0">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Strain Collection</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Culture Collection</h1>
             <p className="text-sm text-gray-600 mt-1">
               Biosafety Clearance: Level {user?.biosafety_clearance}
             </p>

@@ -1,17 +1,58 @@
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { body, validationResult } = require('express-validator');
-const db = require('../config/db');
-const { authenticateToken, checkRole } = require('../middleware/auth');
+import express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { body, validationResult } from "express-validator";
+import db from "../config/db.js";
+import { authenticateToken, checkRole } from "../middleware/auth.js";
 
+const router = express.Router();
 // POST /api/auth/register
 // POST /api/auth/register (DISABLED)
-router.post('/register', (req, res) => {
-  return res.status(403).json({
-    error: 'Self registration is disabled. Contact administrator.'
-  });
+router.post('/register', async (req, res) => {
+  console.log("DB URL REGISTER:", process.env.DATABASE_URL);
+  try {
+    // 1. Cek apakah admin sudah ada
+    const adminCheck = await db.query(
+      `SELECT COUNT(*) FROM users 
+       WHERE role='admin' AND deleted_at IS NULL`
+    );
+
+    const adminCount = parseInt(adminCheck.rows[0].count);
+
+    // 2. Jika sudah ada admin → blokir register
+    if (adminCount > 0) {
+      return res.status(403).json({
+        error: 'System locked. Admin already exists. Contact administrator.'
+      });
+    }
+
+    // 3. Jika BELUM ada admin → hanya boleh buat ADMIN
+    const { email, password, full_name } = req.body;
+
+    if (!email || !password || !full_name) {
+      return res.status(400).json({
+        error: 'email, password, full_name required'
+      });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
+    const result = await db.query(
+      `INSERT INTO users (email, password_hash, full_name, role, biosafety_clearance)
+       VALUES ($1,$2,$3,'admin',4)
+       RETURNING id,email,role`,
+      [email, hash, full_name]
+    );
+
+    res.status(201).json({
+      message: 'Bootstrap admin created',
+      user: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Bootstrap failed' });
+  }
 });
 router.post(
   '/admin/create-user',
@@ -80,36 +121,48 @@ router.post('/login', [
   body('email').isEmail().normalizeEmail(),
   body('password').notEmpty()
 ], async (req, res) => {
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
   const { email, password } = req.body;
+  console.log("DB URL LOGIN:", process.env.DATABASE_URL);
+  console.log("=== LOGIN DEBUG START ===");
+  console.log("EMAIL INPUT:", email);
 
   try {
-    // Find user
     const result = await db.query(
-      `SELECT id, email, password_hash, full_name, role, biosafety_clearance
-      FROM users
-      WHERE email = $1
-      AND deleted_at IS NULL`,
+      `SELECT id, email, password_hash, full_name, role, biosafety_clearance, deleted_at
+       FROM users
+       WHERE email = $1
+       AND deleted_at IS NULL`,
       [email]
     );
 
+    console.log("DB RESULT:", result.rows);
+
     if (result.rows.length === 0) {
+      console.log("USER NOT FOUND IN THIS DATABASE");
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = result.rows[0];
 
-    // Verify password
+    console.log("HASH FROM DB:", user.password_hash);
+    console.log("DELETED_AT:", user.deleted_at);
+
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    console.log("COMPARE RESULT:", isValidPassword);
+
     if (!isValidPassword) {
+      console.log("PASSWORD MISMATCH");
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT
+    console.log("JWT_SECRET EXISTS?:", !!process.env.JWT_SECRET);
+
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -121,12 +174,15 @@ router.post('/login', [
       { expiresIn: '7d' }
     );
 
-    // Audit log
+    console.log("JWT GENERATED SUCCESS");
+
     await db.query(
       `INSERT INTO audit_logs (action, resource_type, resource_id, user_id, ip_address, details)
        VALUES ($1, $2, $3, $4, $5, $6)`,
       ['USER_LOGIN', 'user', user.id, user.id, req.ip, JSON.stringify({ email })]
     );
+
+    console.log("=== LOGIN SUCCESS ===");
 
     res.json({ 
       token, 
@@ -140,7 +196,7 @@ router.post('/login', [
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('LOGIN ERROR:', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -212,4 +268,4 @@ function validatePassword(password) {
   return { valid: errors.length === 0, errors };
 }
 
-module.exports = router;
+export default router;
