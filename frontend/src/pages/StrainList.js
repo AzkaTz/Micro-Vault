@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import { strainsAPI } from '../services/api';
 import StrainDetailModal from '../components/StrainDetailModal';
@@ -33,43 +33,44 @@ function StrainList() {
   const [strainToEdit, setStrainToEdit] = useState(null);
 
   // Fetch strains
-  const fetchStrains = async () => {
+  const fetchStrains = useCallback(async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       const params = {
         page: pagination.page,
         limit: pagination.limit,
-        ...filters,
-        // Convert boolean to string for API
-        cellulolytic: filters.cellulolytic ? 'true' : undefined,
-        antimicrobial: filters.antimicrobial ? 'true' : undefined,
-        nitrogen_fixer: filters.nitrogen_fixer ? 'true' : undefined,
+
+        microorganism_type: filters.microorganism_type || undefined,
+        sample_type: filters.sample_type || undefined,
+        search: filters.search || undefined,
+
+        ...buildPotentialParams(filters)
       };
 
-      // Remove empty filters
       Object.keys(params).forEach(key => {
         if (params[key] === '' || params[key] === undefined) {
           delete params[key];
         }
       });
 
-      const data = await strainsAPI.getAll(params);
-      setStrains(data.strains);
-      setPagination(data.pagination);
+      const res = await strainsAPI.getAll(params);
+
+      setStrains(res.data.data);
+      setPagination(res.data.pagination);
+
     } catch (err) {
-      console.error('Fetch strains error:', err);
-      setError('Failed to load strains');
+      setError('Failed to fetch strains');
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, filters]);
 
   // Initial load
   useEffect(() => {
     fetchStrains();
-  }, [pagination.page, filters]);
+  }, [fetchStrains]);
 
   // Handle filter change
   const handleFilterChange = (e) => {
