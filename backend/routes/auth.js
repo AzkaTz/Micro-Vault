@@ -1,5 +1,5 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { body, validationResult } from "express-validator";
 import db from "../config/db.js";
@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await bcryptjs.hash(password, 10);
 
     const result = await db.query(
       `INSERT INTO users (email, password_hash, full_name, role, biosafety_clearance)
@@ -89,7 +89,7 @@ router.post(
       }
 
       // hash password
-      const hash = await bcrypt.hash(password, 10);
+      const hash = await bcryptjs.hash(password, 10);
 
       const result = await db.query(
         `INSERT INTO users 
@@ -153,7 +153,7 @@ router.post('/login', [
     console.log("HASH FROM DB:", user.password_hash);
     console.log("DELETED_AT:", user.deleted_at);
 
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await bcryptjs.compare(password, user.password_hash);
     console.log("COMPARE RESULT:", isValidPassword);
 
     if (!isValidPassword) {

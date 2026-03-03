@@ -1,6 +1,7 @@
 {
   "name": "microvault-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "MicroVault Backend API",
   "main": "Server.js",
   "scripts": {
@@ -9,9 +10,9 @@
     "test": "jest --coverage"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.1",

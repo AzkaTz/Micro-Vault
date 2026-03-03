@@ -1,9 +1,8 @@
-const express = require('express');
+import express from 'express';
+import { body, validationResult } from 'express-validator';
+import db from '../config/db.js';
+import { authenticateToken } from '../middleware/auth.js';
 const router = express.Router();
-const { body, validationResult } = require('express-validator');
-const db = require('../config/db');
-const { authenticateToken, checkBiosafety, checkRole } = require('../middleware/auth');
-
 // GET /api/strains - List strains with pagination and filters
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -574,4 +573,4 @@ router.patch('/:id/restore', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

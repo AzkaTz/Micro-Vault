@@ -1,14 +1,13 @@
-const { Pool } = require('pg');
+import pg from 'pg';
+import dotenv from 'dotenv';
 
-let pool;
+dotenv.config();
 
-if (!global.pool) {
-  global.pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-}
+const { Pool } = pg;
 
-pool = global.pool;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
-module.exports = pool;
+export default pool;
