@@ -67,8 +67,8 @@ function StrainList() {
 
       const res = await strainsAPI.getAll(params);
 
-      setStrains(res.data.data);
-      setPagination(res.data.pagination);
+      setStrains(res.strains);
+      setPagination(res.pagination);
 
     } catch (err) {
       setError('Failed to fetch strains');
